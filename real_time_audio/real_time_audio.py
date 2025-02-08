@@ -43,14 +43,27 @@ def estimate_pitch(signal, rate):
         return 0  # No valid pitch detected
     return rate / peak  # Convert lag to frequency
 
+# Function to convert frequency to musical note
+def frequency_to_note(frequency):
+    A4 = 440.0
+    if frequency <= 0:
+        return "Unknown"
+    note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    n = round(12 * np.log2(frequency / A4))
+    note = note_names[(n + 9) % 12]  # A4 is index 9
+    octave = 4 + (n // 12)
+    return f"{note}{octave}"
+
 # Real-time loop
 try:
     while True:
         data = np.frombuffer(stream.read(CHUNK, exception_on_overflow=False), dtype=np.int16).copy()
         pitch = estimate_pitch(data, RATE)
+        note = frequency_to_note(pitch)
         if 50 < pitch < 500:  # Display within vocal range
             y_data = np.exp(-0.01 * (x_data - pitch) ** 2)  # Gaussian shape
             line.set_ydata(y_data)
+        print(f"Detected Pitch: {pitch:.2f} Hz ({note})", flush=True)
         plt.pause(0.01)
 except KeyboardInterrupt:
     print("Exiting...")
